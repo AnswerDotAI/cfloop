@@ -7,7 +7,7 @@ name = "cfloop"
 dynamic = ["version"]
 description = "An asyncio event loop on macOS's CFRunLoop, so coroutines, Carbon events, and main-queue delegates share the main thread"
 license = {text = "Apache-2.0"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 readme = "README.md"
 authors = [{name = "Jeremy Howard", email = "github@jhoward.fastmail.fm"}]
 classifiers = [
@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["fastship>=0.0.11", "maturin>=1.0,<2.0", "pytest"]
+dev = ["fastship>=0.0.11", "maturin>=1.0,<2.0", "pytest", "pytest-timeout"]
 
 [project.urls]
 Homepage = "https://github.com/AnswerDotAI/cfloop"
@@ -36,3 +36,5 @@ branch = "main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+timeout = 30
+timeout_method = "thread"
