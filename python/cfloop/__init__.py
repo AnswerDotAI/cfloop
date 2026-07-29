@@ -12,13 +12,14 @@ __all__ = ["__version__", "new_event_loop", "run", "call_later", "post_wake", "p
 class _CarbonSelector(selectors.KqueueSelector):
     """A KqueueSelector whose blocking wait is the Carbon pump. An `FdWatch` on the kqueue's own
     fd posts a wake event when any registered fd turns ready, so the pump pops for fd traffic,
-    Carbon events, and wake posts alike; readiness is then collected without blocking."""
+    Carbon events, and wake posts alike; readiness is then collected without blocking. The watch
+    is level-triggered with no arming state (see DEV.md), so a missed wake self-heals on the
+    next wait."""
     def __init__(self):
         super().__init__()
         self._watch = _core.FdWatch(self._selector.fileno())
 
     def select(self, timeout=None):
-        self._watch.enable()
         ready = super().select(0)
         if ready or timeout == 0: _core.pump(0.0)  # never starve Carbon under fd load
         else:

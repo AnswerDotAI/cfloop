@@ -59,11 +59,12 @@ extern "C" {
         callout: extern "C" fn(CFRunLoopTimerRef, *mut c_void), context: *mut CFRunLoopTimerContext) -> CFRunLoopTimerRef;
     fn CFRunLoopAddTimer(rl: CFRunLoopRef, timer: CFRunLoopTimerRef, mode: CFStringRef);
     fn CFRelease(cf: *const c_void);
-    fn CFFileDescriptorCreate(allocator: *const c_void, fd: i32, close_on_invalidate: u8,
-        callout: extern "C" fn(*mut c_void, u64, *mut c_void), context: *mut c_void) -> *mut c_void;
-    fn CFFileDescriptorEnableCallBacks(fdref: *mut c_void, types: u64);
-    fn CFFileDescriptorCreateRunLoopSource(allocator: *const c_void, fdref: *mut c_void, order: CFIndex) -> *mut c_void;
-    fn CFFileDescriptorInvalidate(fdref: *mut c_void);
+    fn CFSocketCreateWithNative(allocator: *const c_void, sock: i32, callback_types: u64,
+        callout: extern "C" fn(*mut c_void, u64, *const c_void, *const c_void, *mut c_void), context: *mut c_void) -> *mut c_void;
+    fn CFSocketCreateRunLoopSource(allocator: *const c_void, s: *mut c_void, order: CFIndex) -> *mut c_void;
+    fn CFSocketInvalidate(s: *mut c_void);
+    fn CFSocketGetSocketFlags(s: *mut c_void) -> u64;
+    fn CFSocketSetSocketFlags(s: *mut c_void, flags: u64);
     fn CFRunLoopAddSource(rl: CFRunLoopRef, source: *mut c_void, mode: CFStringRef);
     static kCFRunLoopCommonModes: CFStringRef;
 }
@@ -123,16 +124,18 @@ fn post_wake() {
     post_wake_inner()
 }
 
-extern "C" fn fd_readable(_f: *mut c_void, _flags: u64, _info: *mut c_void) {
+extern "C" fn fd_readable(_s: *mut c_void, _cbtype: u64, _addr: *const c_void, _data: *const c_void, _info: *mut c_void) {
     post_wake_inner()
 }
 
-/// Watches an fd via a CFFileDescriptor source on the main run loop: when it turns readable
-/// during a `pump`, a wake event pops the pump so the selector can collect. Callbacks are
-/// one-shot, so `enable` re-arms before each wait; `invalidate` on close.
+/// Watches an fd via a CFSocket source on the main run loop: when it turns readable during a
+/// `pump`, a wake event pops the pump so the selector can collect. CFSocket read callbacks
+/// auto-re-enable and fire on level (probed in DEV.md), so there is no arming state to lose:
+/// a missed wake regenerates on the next wait while the fd stays readable. Its predecessor,
+/// the one-shot CFFileDescriptor, wedged permanently under cross-thread load.
 #[pyclass(unsendable)]
 struct FdWatch {
-    fdref: *mut c_void,
+    sock: *mut c_void,
     source: *mut c_void,
 }
 
@@ -141,21 +144,18 @@ impl FdWatch {
     #[new]
     fn new(fd: i32) -> Self {
         unsafe {
-            let fdref = CFFileDescriptorCreate(std::ptr::null(), fd, 0, fd_readable, std::ptr::null_mut());
-            let source = CFFileDescriptorCreateRunLoopSource(std::ptr::null(), fdref, 0);
+            let sock = CFSocketCreateWithNative(std::ptr::null(), fd, 1, fd_readable, std::ptr::null_mut()); // kCFSocketReadCallBack
+            CFSocketSetSocketFlags(sock, CFSocketGetSocketFlags(sock) & !0x80); // the kqueue fd is the selector's to close, not CFSocket's
+            let source = CFSocketCreateRunLoopSource(std::ptr::null(), sock, 0);
             CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopCommonModes);
-            CFFileDescriptorEnableCallBacks(fdref, 1); // kCFFileDescriptorReadCallBack
-            FdWatch { fdref, source }
+            FdWatch { sock, source }
         }
-    }
-    fn enable(&self) {
-        unsafe { CFFileDescriptorEnableCallBacks(self.fdref, 1) }
     }
     fn invalidate(&self) {
         unsafe {
-            CFFileDescriptorInvalidate(self.fdref);
+            CFSocketInvalidate(self.sock);
             CFRelease(self.source as *const c_void);
-            CFRelease(self.fdref as *const c_void);
+            CFRelease(self.sock as *const c_void);
         }
     }
 }

@@ -55,3 +55,25 @@ def test_cf_timer_interop():
 def test_loop_factory_form():
     "new_event_loop composes with asyncio.Runner, the modern policy-free integration point"
     with asyncio.Runner(loop_factory=cfloop.new_event_loop) as r: assert r.run(asyncio.sleep(0.01, result=42)) == 42
+
+
+def test_wake_storm():
+    "Cross-thread wakes racing Carbon traffic: the load shape that wedged the one-shot CFFileDescriptor watch"
+    async def main():
+        loop, n = asyncio.get_running_loop(), [0]
+        def inc(): n[0] += 1
+        def hammer():
+            for i in range(2000):
+                loop.call_soon_threadsafe(inc)
+                if i % 20 == 0: time.sleep(0.001)
+        threads = [threading.Thread(target=hammer, daemon=True) for _ in range(3)]
+        for t in threads: t.start()
+        for _ in range(50): cfloop.call_later(0.001, lambda: None)  # Carbon-side traffic inside the pump
+        while any(t.is_alive() for t in threads): await asyncio.sleep(0.05)
+        await asyncio.sleep(0.2)
+        alive = []
+        loop.call_soon_threadsafe(alive.append, 1)
+        await asyncio.sleep(0.2)
+        return n[0], alive
+    n, alive = cfloop.run(main())
+    assert n == 6000 and alive == [1], (n, alive)
