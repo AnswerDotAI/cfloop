@@ -1,0 +1,38 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "cfloop"
+dynamic = ["version"]
+description = "An asyncio event loop on macOS's CFRunLoop, so coroutines, Carbon events, and main-queue delegates share the main thread"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+readme = "README.md"
+authors = [{name = "Jeremy Howard", email = "github@jhoward.fastmail.fm"}]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[project.optional-dependencies]
+dev = ["fastship>=0.0.11", "maturin>=1.0,<2.0", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/AnswerDotAI/cfloop"
+Repository = "https://github.com/AnswerDotAI/cfloop"
+Issues = "https://github.com/AnswerDotAI/cfloop/issues"
+
+[tool.maturin]
+features = ["extension-module"]
+python-source = "python"
+module-name = "cfloop._core"
+
+[tool.uv]
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.rs" }, { file = "Cargo.toml" }, { file = "Cargo.lock" }]
+
+[tool.fastship]
+branch = "main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

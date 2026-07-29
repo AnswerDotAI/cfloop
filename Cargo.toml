@@ -1,0 +1,16 @@
+[package]
+name = "cfloop"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "An asyncio event loop on macOS's CFRunLoop, so coroutines, Carbon events, and main-queue delegates share the main thread"
+
+[lib]
+name = "cfloop"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = ">=0.28"
+
+[features]
+extension-module = ["pyo3/extension-module"]
