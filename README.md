@@ -8,8 +8,10 @@ import asyncio, cfloop
 async def main():
     await asyncio.sleep(1)  # while anything Carbon or main-queue keeps flowing
 
-cfloop.run(main())                                    # the asyncio.run twin; must own the main thread
-asyncio.run(main(), loop_factory=cfloop.new_event_loop)  # or compose it yourself (also asyncio.Runner)
+# the asyncio.run twin; must own the main thread
+cfloop.run(main())
+# or compose it yourself (also asyncio.Runner)
+asyncio.run(main(), loop_factory=cfloop.new_event_loop)
 ```
 
 That is the whole API. The loop is a stock `asyncio.SelectorEventLoop` whose selector waits inside a Carbon event pump instead of a bare kqueue, so whenever asyncio is idle, Carbon events dispatch (hotkeys included), CFRunLoop timers and sources fire, and the main dispatch queue drains. Everything asyncio provides - tasks, subprocesses, signal handling, debug mode's slow-callback warnings - is inherited, not reimplemented. macOS only, Python 3.12+.
