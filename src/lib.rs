@@ -6,7 +6,7 @@ type EventRef = *mut c_void;
 type EventTargetRef = *mut c_void;
 
 #[link(name = "Carbon", kind = "framework")]
-extern "C" {
+unsafe extern "C" {
     fn RunApplicationEventLoop();
     fn QuitApplicationEventLoop();
     fn GetEventDispatcherTarget() -> EventTargetRef;
@@ -52,15 +52,19 @@ struct CFRunLoopTimerContext {
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]
-extern "C" {
+unsafe extern "C" {
     fn CFRunLoopGetMain() -> CFRunLoopRef;
     fn CFAbsoluteTimeGetCurrent() -> f64;
-    fn CFRunLoopTimerCreate(allocator: *const c_void, fire_date: f64, interval: f64, flags: u64, order: CFIndex,
-        callout: extern "C" fn(CFRunLoopTimerRef, *mut c_void), context: *mut CFRunLoopTimerContext) -> CFRunLoopTimerRef;
+    fn CFRunLoopTimerCreate(
+        allocator: *const c_void, fire_date: f64, interval: f64, flags: u64, order: CFIndex,
+        callout: extern "C" fn(CFRunLoopTimerRef, *mut c_void), context: *mut CFRunLoopTimerContext,
+    ) -> CFRunLoopTimerRef;
     fn CFRunLoopAddTimer(rl: CFRunLoopRef, timer: CFRunLoopTimerRef, mode: CFStringRef);
     fn CFRelease(cf: *const c_void);
-    fn CFSocketCreateWithNative(allocator: *const c_void, sock: i32, callback_types: u64,
-        callout: extern "C" fn(*mut c_void, u64, *const c_void, *const c_void, *mut c_void), context: *mut c_void) -> *mut c_void;
+    fn CFSocketCreateWithNative(
+        allocator: *const c_void, sock: i32, callback_types: u64,
+        callout: extern "C" fn(*mut c_void, u64, *const c_void, *const c_void, *mut c_void), context: *mut c_void,
+    ) -> *mut c_void;
     fn CFSocketCreateRunLoopSource(allocator: *const c_void, s: *mut c_void, order: CFIndex) -> *mut c_void;
     fn CFSocketInvalidate(s: *mut c_void);
     fn CFSocketGetSocketFlags(s: *mut c_void) -> u64;
@@ -72,7 +76,9 @@ extern "C" {
 extern "C" fn timer_fired(_timer: CFRunLoopTimerRef, info: *mut c_void) {
     let cb = unsafe { Box::from_raw(info as *mut Py<PyAny>) };
     Python::attach(|py| {
-        if let Err(e) = cb.call0(py) { e.print(py); }
+        if let Err(e) = cb.call0(py) {
+            e.print(py);
+        }
         drop(cb);
     });
     post_wake_inner(); // the callback may have scheduled asyncio work, so pop any pump in progress
