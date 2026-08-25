@@ -14,3 +14,6 @@ pyo3 = ">=0.28"
 
 [features]
 extension-module = ["pyo3/extension-module"]
+
+[profile.release]
+strip = true
