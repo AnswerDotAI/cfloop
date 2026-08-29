@@ -84,9 +84,7 @@ unsafe extern "C" {
 extern "C" fn timer_fired(_timer: CFRunLoopTimerRef, info: *mut c_void) {
     let cb = unsafe { Box::from_raw(info as *mut Py<PyAny>) };
     Python::attach(|py| {
-        if let Err(e) = cb.call0(py) {
-            e.print(py);
-        }
+        if let Err(e) = cb.call0(py) { e.print(py); }
         drop(cb);
     });
     post_wake_inner(); // the callback may have scheduled asyncio work, so pop any pump in progress
@@ -96,16 +94,12 @@ extern "C" fn timer_fired(_timer: CFRunLoopTimerRef, info: *mut c_void) {
 /// main thread: Carbon events and main-queue work only dispatch there. The asyncio arrangement
 /// (`cfloop.run`) does not use this; it is for callers who want Carbon to own the thread.
 #[pyfunction]
-fn run_app(py: Python) {
-    py.detach(|| unsafe { RunApplicationEventLoop() });
-}
+fn run_app(py: Python) { py.detach(|| unsafe { RunApplicationEventLoop() }); }
 
 /// Quit `run_app`. Cross-thread this is a silent no-op (the quit event must post from the
 /// loop's own thread), so call it from a callback the loop runs, e.g. via `call_later`.
 #[pyfunction]
-fn quit_app() {
-    unsafe { QuitApplicationEventLoop() }
-}
+fn quit_app() { unsafe { QuitApplicationEventLoop() } }
 
 /// Fire `callback` once on the main run loop, `delay` seconds from now, in common modes.
 #[pyfunction]
@@ -134,13 +128,9 @@ fn post_wake_inner() {
 /// Post a no-op Carbon event, popping a `pump` in progress. The wake for anything that
 /// schedules asyncio work from inside the pump without being a Carbon event itself.
 #[pyfunction]
-fn post_wake() {
-    post_wake_inner()
-}
+fn post_wake() { post_wake_inner() }
 
-extern "C" fn fd_readable(_s: *mut c_void, _cbtype: u64, _addr: *const c_void, _data: *const c_void, _info: *mut c_void) {
-    post_wake_inner()
-}
+extern "C" fn fd_readable(_s: *mut c_void, _cbtype: u64, _addr: *const c_void, _data: *const c_void, _info: *mut c_void) { post_wake_inner() }
 
 /// Watches an fd via a CFSocket source on the main run loop: when it turns readable during a
 /// `pump`, a wake event pops the pump so the selector can collect. CFSocket read callbacks
@@ -148,10 +138,7 @@ extern "C" fn fd_readable(_s: *mut c_void, _cbtype: u64, _addr: *const c_void, _
 /// a missed wake regenerates on the next wait while the fd stays readable. Its predecessor,
 /// the one-shot CFFileDescriptor, wedged permanently under cross-thread load.
 #[pyclass(unsendable)]
-struct FdWatch {
-    sock: *mut c_void,
-    source: *mut c_void,
-}
+struct FdWatch { sock: *mut c_void, source: *mut c_void }
 
 #[pymethods]
 impl FdWatch {
