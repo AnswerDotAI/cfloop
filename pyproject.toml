@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["fastship>=0.0.11", "maturin>=1.0,<2.0", "pytest", "pytest-timeout"]
+dev = ["fastws-cli>=0.0.20", "fastship>=0.0.11", "maturin>=1.0,<2.0", "pytest", "pytest-timeout"]
 
 [project.urls]
 Homepage = "https://github.com/AnswerDotAI/cfloop"
@@ -24,12 +24,11 @@ Repository = "https://github.com/AnswerDotAI/cfloop"
 Issues = "https://github.com/AnswerDotAI/cfloop/issues"
 
 [tool.maturin]
-features = ["extension-module"]
 python-source = "python"
 module-name = "cfloop._core"
 
 [tool.uv]
-cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.rs" }, { file = "Cargo.toml" }, { file = ".git/fastws-cargo-key" }]
+cache-keys = [{ file = "pyproject.toml" }, { file = "Cargo.toml" }]
 
 [tool.fastship]
 branch = "main"
