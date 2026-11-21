@@ -37,3 +37,4 @@ branch = "main"
 testpaths = ["tests"]
 timeout = 30
 timeout_method = "thread"
+addopts = "-p timeout"
