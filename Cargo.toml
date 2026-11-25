@@ -9,6 +9,7 @@ description = "An asyncio event loop on macOS's CFRunLoop, so coroutines, Carbon
 name = "cfloop"
 crate-type = ["cdylib", "rlib"]
 test = false
+doctest = false
 
 [dependencies]
 pyo3 = { version = ">=0.28", features = ["extension-module", "abi3-py312"] }
