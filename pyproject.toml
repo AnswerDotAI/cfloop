@@ -24,6 +24,7 @@ Homepage = "https://github.com/AnswerDotAI/cfloop"
 Repository = "https://github.com/AnswerDotAI/cfloop"
 Issues = "https://github.com/AnswerDotAI/cfloop/issues"
 
+Documentation = "https://AnswerDotAI.github.io/cfloop/"
 [tool.maturin]
 python-source = "python"
 module-name = "cfloop._core"
